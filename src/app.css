@@ -1,0 +1,122 @@
+@import '@fontsource-variable/recursive/crsv.css';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@layer base {
+  /* Palette ported from ~/code/weave (Catppuccin Latte, warm cream). */
+  :root {
+    --background: #f2efe8;
+    --foreground: #15130f;
+    --card: #faf8f3;
+    --card-foreground: #15130f;
+    --popover: #faf8f3;
+    --popover-foreground: #15130f;
+    --primary: #e4dfd5;
+    --primary-foreground: #15130f;
+    --secondary: #ece8e0;
+    --secondary-foreground: #15130f;
+    --muted: #ece8e0;
+    --muted-foreground: #5d574d;
+    --accent: #1e66f5;
+    --accent-foreground: #faf8f3;
+    --destructive: #d92626;
+    --destructive-foreground: #faf8f3;
+    --border: #e0dcd2;
+    --border-dark: #cfc8ba;
+    --input: #e0dcd2;
+    --ring: #1e66f5;
+    --radius: 0.375rem;
+  }
+  .dark {
+    --background: #181613;
+    --foreground: #ece7da;
+    --card: #211e1a;
+    --card-foreground: #ece7da;
+    --popover: #211e1a;
+    --popover-foreground: #ece7da;
+    --primary: #2a2620;
+    --primary-foreground: #ece7da;
+    --secondary: #2a2620;
+    --secondary-foreground: #ece7da;
+    --muted: #2a2620;
+    --muted-foreground: #9a9285;
+    --accent: #74c7ec;
+    --accent-foreground: #181613;
+    --destructive: #f38ba8;
+    --destructive-foreground: #181613;
+    --border: #3a3530;
+    --border-dark: #4a453f;
+    --input: #3a3530;
+    --ring: #74c7ec;
+  }
+}
+
+@theme inline {
+  /* Radius (for rounded-*) */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-border-dark: var(--border-dark);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --color-radius: var(--radius);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply h-screen w-screen overflow-hidden bg-background text-foreground;
+  }
+}
+
+body {
+  /* Weave uses Fira Code; fall back to the platform monospace (SF Mono on
+     macOS) so we stay offline-friendly with the same terminal-ish feel. */
+  font-family: 'Fira Code', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.d {
+  @apply border border-red-500;
+}

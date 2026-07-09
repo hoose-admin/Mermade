@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build output (adapter-static writes here; Docker rebuilds it fresh)
+docs/
+.svelte-kit/
+build/
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# Test / coverage artifacts
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# OS / editor cruft
+.DS_Store
