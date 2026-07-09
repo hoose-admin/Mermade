@@ -1,17 +1,26 @@
 <script lang="ts">
   import AiHistory from '$/components/AiHistory/AiHistory.svelte';
   import { Button } from '$/components/ui/button';
-  import { aiHistory, recordCheckpoint } from '$/ai/aiHistory.svelte';
+  import {
+    aiHistory,
+    AI_CONTEXT_WINDOW,
+    contextTurns,
+    recordCheckpoint
+  } from '$/ai/aiHistory.svelte';
   import { aiKeyDialog, aiPanel, aiSettings } from '$/util/aiSettings.svelte';
   import { generateMermaid, MODEL } from '$/util/gemini';
+  import { persisted } from '$/util/persist.svelte';
   import { updateCode, validatedState } from '$/util/state.svelte';
   import AutoAwesomeIcon from '~icons/material-symbols/auto-awesome-outline-rounded';
   import CloseIcon from '~icons/material-symbols/close-rounded';
+  import ForumIcon from '~icons/material-symbols/forum-outline-rounded';
   import HistoryIcon from '~icons/material-symbols/history-rounded';
   import KeyIcon from '~icons/material-symbols/key-outline-rounded';
   import SendIcon from '~icons/material-symbols/arrow-upward-rounded';
 
-  let input = $state('');
+  // Persisted so a reload (dev-server HMR or a plain refresh) doesn't discard a
+  // half-typed prompt. Cleared on a successful send.
+  const draft = persisted<string>('aiDraft', '');
   let loading = $state(false);
   let error = $state('');
   let summary = $state('');
@@ -33,7 +42,7 @@
       aiKeyDialog.open = true;
       return;
     }
-    const prompt = input.trim();
+    const prompt = draft.value.trim();
     if (!prompt) {
       return;
     }
@@ -42,13 +51,16 @@
     // The code we send is exactly the "before" state for the checkpoint.
     const beforeCode = validatedState.current.code;
     const diagramType = validatedState.current.diagramType;
+    // Recent edits leading to the current state (before this one is recorded).
+    const history = aiSettings.conversational ? contextTurns() : undefined;
     try {
       const result = await generateMermaid({
         prompt,
         code: beforeCode,
         apiKey: aiSettings.key,
         diagramType,
-        userStyle: aiSettings.style
+        userStyle: aiSettings.style,
+        history
       });
       updateCode(result.code, { updateDiagram: true });
       recordCheckpoint({
@@ -60,7 +72,7 @@
         diagramType
       });
       summary = result.summary || 'Diagram updated.';
-      input = '';
+      draft.value = '';
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Request failed';
     } finally {
@@ -76,6 +88,19 @@
         <AutoAwesomeIcon class="size-4 text-accent" /> AI assistant
       </span>
       <div class="flex items-center gap-1">
+        <button
+          class={[
+            'rounded p-1 hover:bg-muted hover:text-foreground',
+            aiSettings.conversational ? 'text-accent' : 'text-muted-foreground'
+          ]}
+          title={aiSettings.conversational
+            ? `Conversational mode on — uses your last ${AI_CONTEXT_WINDOW} edits as context`
+            : 'Conversational mode off — each prompt is independent'}
+          aria-label="Toggle conversational mode"
+          aria-pressed={aiSettings.conversational}
+          onclick={() => (aiSettings.conversational = !aiSettings.conversational)}>
+          <ForumIcon class="size-4" />
+        </button>
         <button
           class={[
             'relative rounded p-1 hover:bg-muted hover:text-foreground',
@@ -112,7 +137,7 @@
     <div class="flex items-end gap-2">
       <textarea
         bind:this={textarea}
-        bind:value={input}
+        bind:value={draft.value}
         rows="2"
         disabled={loading}
         placeholder={aiSettings.hasKey
@@ -130,7 +155,7 @@
         variant="accent"
         size="icon"
         title="Send"
-        disabled={loading || (aiSettings.hasKey && !input.trim())}
+        disabled={loading || (aiSettings.hasKey && !draft.value.trim())}
         onclick={submit}>
         <SendIcon />
       </Button>

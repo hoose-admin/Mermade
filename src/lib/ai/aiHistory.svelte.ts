@@ -86,6 +86,27 @@ export const aiHistory = {
   }
 };
 
+// --- conversation context ----------------------------------------------------
+
+export interface AiTurn {
+  prompt: string;
+  summary: string;
+}
+
+/**
+ * The recent edits that led to the *current* diagram, as prior conversation
+ * turns (oldest-first). Only checkpoints up to `head` are included, so a
+ * rewound diagram carries the history of the branch actually on screen, not the
+ * abandoned redo tail. Capped at the last `AI_CONTEXT_WINDOW` edits.
+ */
+export const contextTurns = (): AiTurn[] => {
+  const timeline = timelineFor(tabsState.activeId);
+  return timeline.checkpoints
+    .slice(0, timeline.head + 1)
+    .slice(-AI_CONTEXT_WINDOW)
+    .map((c) => ({ prompt: c.prompt, summary: c.summary }));
+};
+
 // --- recording & rewind ------------------------------------------------------
 
 export const recordCheckpoint = (entry: {

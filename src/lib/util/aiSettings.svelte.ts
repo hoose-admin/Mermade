@@ -13,9 +13,11 @@ const styleStore = persisted<string>('aiUserStyle', '');
 // so follow-ups like "undo that" / "make it bigger" resolve. On by default.
 const conversationalStore = persisted<boolean>('aiConversational', true);
 
-// Reactive flags so any component can open the key dialog / AI panel.
+// The key dialog is a transient modal — fine to reset on reload.
 let dialogOpen = $state(false);
-let panelOpen = $state(false);
+// The AI panel's open-state is persisted so a dev-server reload (or a normal
+// page refresh) doesn't close the panel out from under the user mid-task.
+const panelStore = persisted<boolean>('aiPanelOpen', false);
 
 export const aiSettings = {
   get key(): string {
@@ -52,9 +54,9 @@ export const aiKeyDialog = {
 
 export const aiPanel = {
   get open(): boolean {
-    return panelOpen;
+    return panelStore.value;
   },
   set open(value: boolean) {
-    panelOpen = value;
+    panelStore.value = value;
   }
 };

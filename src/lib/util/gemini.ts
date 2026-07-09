@@ -48,7 +48,8 @@ export const generateMermaid = async ({
   code,
   apiKey,
   diagramType,
-  userStyle
+  userStyle,
+  history
 }: {
   prompt: string;
   code: string;
@@ -57,14 +58,29 @@ export const generateMermaid = async ({
   diagramType?: string;
   /** The user's persisted custom instructions (`aiSettings.style`). */
   userStyle?: string;
+  /**
+   * Recent edits (oldest-first) replayed as prior conversation turns so the
+   * model can resolve references like "undo that" / "make it bigger". Omit for
+   * a stateless one-shot request. The final user turn still carries the current
+   * diagram, so a manual edit between AI turns is respected.
+   */
+  history?: { prompt: string; summary: string }[];
 }): Promise<AiResult> => {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(
     apiKey
   )}`;
 
+  // Replay prior edits as compact turns (instruction ↔ what changed), then the
+  // live turn with the full current source as ground truth.
+  const priorTurns = (history ?? []).flatMap((turn) => [
+    { role: 'user', parts: [{ text: `Instruction: ${turn.prompt}` }] },
+    { role: 'model', parts: [{ text: turn.summary || 'Applied the requested change.' }] }
+  ]);
+
   const body = {
     systemInstruction: { parts: [{ text: buildSystemPrompt({ diagramType, userStyle }) }] },
     contents: [
+      ...priorTurns,
       {
         role: 'user',
         parts: [
