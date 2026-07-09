@@ -5,10 +5,29 @@
 import { persisted } from './persist.svelte';
 
 const keyStore = persisted<string>('geminiApiKey', '');
-// The user-editable layer of the AI "skill": free-form standing preferences
-// (tone, conventions, defaults) appended to every system prompt. See
-// `src/lib/ai/skill.ts` for how it is composed into the final prompt.
-const styleStore = persisted<string>('aiUserStyle', '');
+
+// "Remember my key": when true (the default) the key is persisted to
+// localStorage as before. When false the key lives ONLY in `sessionKey` below —
+// in memory, gone on tab close, never written to disk. This is the safer choice
+// on a shared or public machine.
+const rememberStore = persisted<boolean>('aiRememberKey', true);
+
+// The in-memory key, used when "remember" is off. Module-level $state is fine in
+// a .svelte.ts file (same as `dialogOpen` below).
+let sessionKey = $state('');
+
+// Enforce the invariant on load: if "remember" is off, no key may sit on disk.
+// (Normally the setters keep it clean, but this guards a leftover from a crash,
+// a manual localStorage edit, or an older build.)
+if (!rememberStore.value && keyStore.value) {
+  keyStore.value = '';
+}
+
+const currentKey = (): string => (rememberStore.value ? keyStore.value : sessionKey);
+// The user-editable AI context now lives per-diagram in the "AI Context" editor
+// tab (`State.aiContext`), not here — see `src/lib/ai/skill.ts` and
+// `updateContext` in state.svelte. The legacy global `aiUserStyle` value is
+// migrated into the active diagram once by `migrateLegacyAiContext`.
 // Conversational mode: feed the recent AI edits (see aiHistory) as prior turns
 // so follow-ups like "undo that" / "make it bigger" resolve. On by default.
 const conversationalStore = persisted<boolean>('aiConversational', true);
@@ -21,19 +40,32 @@ const panelStore = persisted<boolean>('aiPanelOpen', false);
 
 export const aiSettings = {
   get key(): string {
-    return keyStore.value;
+    return currentKey();
   },
   set key(value: string) {
-    keyStore.value = value.trim();
+    const trimmed = value.trim();
+    // Always hold the key in memory so it's usable this session; only mirror it
+    // to disk when "remember" is on. Setting '' (Clear) scrubs both.
+    sessionKey = trimmed;
+    keyStore.value = rememberStore.value ? trimmed : '';
   },
   get hasKey(): boolean {
-    return keyStore.value.trim().length > 0;
+    return currentKey().trim().length > 0;
   },
-  get style(): string {
-    return styleStore.value;
+  get remember(): boolean {
+    return rememberStore.value;
   },
-  set style(value: string) {
-    styleStore.value = value;
+  set remember(value: boolean) {
+    if (value === rememberStore.value) {
+      return;
+    }
+    // Migrate the current key across the storage boundary so toggling never
+    // loses it mid-session: on -> persist what we hold; off -> keep it in memory
+    // and scrub disk.
+    const held = currentKey();
+    rememberStore.value = value;
+    sessionKey = held;
+    keyStore.value = value ? held : '';
   },
   get conversational(): boolean {
     return conversationalStore.value;

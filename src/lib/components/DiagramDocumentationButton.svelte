@@ -100,7 +100,9 @@
     const docConfig: { code: string; config?: string } = docMap[key as keyof typeof docMap] ?? {
       code: ''
     };
-    const url = docURLBase + (docConfig[editorMode] ?? docConfig.code ?? '');
+    // Only 'code'/'config' have docs pages; the AI Context tab falls back to code docs.
+    const modeKey = editorMode === 'config' ? 'config' : 'code';
+    const url = docURLBase + (docConfig[modeKey] ?? docConfig.code ?? '');
     return { key, url };
   });
 </script>

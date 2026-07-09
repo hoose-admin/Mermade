@@ -35,6 +35,9 @@ export interface State {
   pan?: { x: number; y: number };
   zoom?: number;
   loader?: LoaderConfig;
+  // Per-diagram context the user writes in the "AI Context" tab; injected into
+  // every AI prompt's system instruction. Travels with the diagram.
+  aiContext?: string;
 }
 
 export interface ValidatedState extends State {
@@ -86,7 +89,7 @@ export type DocumentationConfig = Record<
   }
 >;
 
-export type EditorMode = 'code' | 'config';
+export type EditorMode = 'code' | 'config' | 'context';
 
 export type Loader = (url: string) => Promise<State>;
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;

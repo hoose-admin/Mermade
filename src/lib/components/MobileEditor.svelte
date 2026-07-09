@@ -70,8 +70,9 @@
   });
 
   $effect(() => {
-    const { editorMode, code, mermaid } = validatedState.current;
-    const text = editorMode === 'code' ? code : mermaid;
+    const { editorMode, code, mermaid, aiContext } = validatedState.current;
+    const text =
+      editorMode === 'code' ? code : editorMode === 'config' ? mermaid : (aiContext ?? '');
     if (currentText === text || !editorView) {
       return;
     }

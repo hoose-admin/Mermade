@@ -9,11 +9,14 @@
  *   2. GLOBAL_RULES  — hard rules that hold for every diagram.
  *   3. TYPE_TIPS     — guidance specific to the diagram currently on screen,
  *                      selected from the parser's detected diagram type.
- *   4. userStyle     — the user's own persisted preferences (UI-editable, see
- *                      `aiSettings.style`), appended last so it can override.
+ *   4. context       — the user's per-diagram "AI Context" (the editor tab,
+ *                      stored in `State.aiContext`), appended last so it can
+ *                      describe or override anything for this specific diagram.
  *
- * To teach the assistant something new, add a rule here or a bullet under the
- * relevant TYPE_TIPS entry — no call-site changes required.
+ * Layers 1–3 are the invisible base prompt (this file, edited in code). Layer 4
+ * is the only user-facing context surface. To teach the assistant something new
+ * across all diagrams, add a rule here or a bullet under the relevant TYPE_TIPS
+ * entry — no call-site changes required.
  */
 
 export const ROLE =
@@ -26,6 +29,7 @@ Rules:
 - Keep the user's existing diagram intact and change only what the instruction asks, unless they clearly want to start over.
 - Preserve the existing diagram type unless the user explicitly asks to change it.
 - The code must be syntactically valid Mermaid that renders without errors. Do not include Markdown code fences.
+- CRITICAL: any label text containing special characters — parentheses ( ), square brackets, braces, quotes, commas, colons, #, <, >, or a leading number — MUST be wrapped in double quotes. E.g. write \`A["Simulation (FDTD, mode)"]\`, never \`A[Simulation (FDTD, mode)]\`. Unquoted brackets/parens inside a label break the parser.
 - Also give a very short (one sentence, plain-language) summary of what you changed.`;
 
 /**
@@ -34,7 +38,7 @@ Rules:
  * contribute no extra guidance.
  */
 export const TYPE_TIPS: Record<string, string> = {
-  flowchart: `This is a flowchart. Node ids come before their bracket label, e.g. \`A[Label]\`, \`B(Rounded)\`, \`C{Decision}\`. Edges: \`A --> B\`, labelled \`A -->|text| B\`. Use \`subgraph Name ... end\` to group. Keep node ids stable when editing so existing edges keep working.`,
+  flowchart: `This is a flowchart. Node ids come before their bracket label, e.g. \`A[Label]\`, \`B(Rounded)\`, \`C{Decision}\`. Edges: \`A --> B\`, labelled \`A -->|text| B\`. Use \`subgraph Name ... end\` to group. Keep node ids stable when editing so existing edges keep working. Quote any label containing parentheses, commas, or other special characters: \`A["Simulation (FDTD, mode)"]\`, not \`A[Simulation (FDTD, mode)]\`.`,
   sequenceDiagram: `This is a sequence diagram. Declare participants with \`participant A\` (or \`actor A\`). Messages: \`A->>B: text\` (solid arrow), \`A-->>B: text\` (dashed reply). Use \`activate\`/\`deactivate\` or \`A->>+B\`/\`B-->>-A\` for lifelines, and \`loop\`/\`alt\`/\`opt\`/\`par ... end\` blocks for control flow.`,
   classDiagram: `This is a class diagram. Define members inside \`class Name { +field: Type; +method() }\`. Relationships: \`A <|-- B\` (inheritance), \`A *-- B\` (composition), \`A o-- B\` (aggregation), \`A --> B\` (association). Visibility prefixes: + public, - private, # protected.`,
   stateDiagram: `This is a state diagram (stateDiagram-v2). Use \`[*] --> State\` for the start and \`State --> [*]\` for the end. Transitions: \`A --> B: event\`. Nest with \`state Name { ... }\` and use \`state fork <<fork>>\` / \`<<choice>>\` for branching.`,
@@ -85,12 +89,12 @@ export const normalizeDiagramType = (raw?: string): string => {
 export interface SkillContext {
   /** Raw diagram type from the parser (`validatedState.current.diagramType`). */
   diagramType?: string;
-  /** The user's persisted custom instructions (`aiSettings.style`). */
-  userStyle?: string;
+  /** The user's per-diagram "AI Context" tab content (`State.aiContext`). */
+  context?: string;
 }
 
 /** Compose the full system prompt from the skill layers for one request. */
-export const buildSystemPrompt = ({ diagramType, userStyle }: SkillContext = {}): string => {
+export const buildSystemPrompt = ({ diagramType, context }: SkillContext = {}): string => {
   const sections = [ROLE, GLOBAL_RULES];
 
   const tip = TYPE_TIPS[normalizeDiagramType(diagramType)];
@@ -98,10 +102,12 @@ export const buildSystemPrompt = ({ diagramType, userStyle }: SkillContext = {})
     sections.push(`Guidance for the current diagram:\n${tip}`);
   }
 
-  const style = userStyle?.trim();
-  if (style) {
+  const userContext = context?.trim();
+  if (userContext) {
+    // The user's text is passed through verbatim, bounded by explicit tags so the
+    // model treats it as a self-contained block rather than as more instructions.
     sections.push(
-      `The user has set these standing preferences. Follow them unless an instruction says otherwise:\n${style}`
+      `The user has provided the following context about the current diagram and how they want it edited, inside the <user_diagram_context> tags below. Treat it as authoritative background and follow any preferences in it unless a specific instruction overrides them.\n\n<user_diagram_context>\n${userContext}\n</user_diagram_context>`
     );
   }
 

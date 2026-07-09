@@ -2,22 +2,24 @@
   import { Button } from '$/components/ui/button';
   import * as Dialog from '$/components/ui/dialog';
   import { Input } from '$/components/ui/input';
+  import { Switch } from '$/components/ui/switch';
   import { aiKeyDialog, aiSettings } from '$/util/aiSettings.svelte';
 
   let value = $state(aiSettings.key);
-  let style = $state(aiSettings.style);
+  let remember = $state(aiSettings.remember);
 
-  // Reset the fields to the stored values each time the dialog opens.
+  // Reset the fields to the stored settings each time the dialog opens.
   $effect(() => {
     if (aiKeyDialog.open) {
       value = aiSettings.key;
-      style = aiSettings.style;
+      remember = aiSettings.remember;
     }
   });
 
   const save = () => {
+    // Set `remember` first so the key setter routes to the right store.
+    aiSettings.remember = remember;
     aiSettings.key = value;
-    aiSettings.style = style;
     aiKeyDialog.open = false;
   };
   const clear = () => {
@@ -31,8 +33,8 @@
     <Dialog.Header>
       <Dialog.Title class="text-xl">Connect a Gemini API key</Dialog.Title>
       <Dialog.Description>
-        Enables AI diagram edits via Google Gemini. Your key is stored only in this browser
-        (localStorage) and is sent directly to Google — nowhere else.
+        Enables AI diagram edits via Google Gemini. Your key is sent directly to Google — nowhere
+        else — and stored only where you choose below.
       </Dialog.Description>
     </Dialog.Header>
 
@@ -54,20 +56,21 @@
         rel="noopener noreferrer">
         Get a free key at Google AI Studio →
       </a>
+      <p class="text-xs text-muted-foreground">
+        Tip: use the <span class="font-medium text-foreground">AI Context</span> tab (next to Code
+        and Config) to tell the AI what this diagram is about and how you want it edited.
+      </p>
 
-      <div class="flex flex-col gap-1.5 border-t border-muted pt-3">
-        <label for="ai-style" class="text-sm font-medium">Custom instructions</label>
-        <p class="text-xs text-muted-foreground">
-          Standing preferences the AI follows on every edit — style, conventions, defaults.
-          E.g. “Use left-to-right flowcharts and keep node labels short.”
-        </p>
-        <textarea
-          id="ai-style"
-          rows="4"
-          bind:value={style}
-          placeholder="Optional — how should the AI build your diagrams?"
-          class="resize-y rounded-md border border-input bg-background p-2 text-sm placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
-        ></textarea>
+      <div class="flex items-start justify-between gap-3">
+        <label for="ai-remember" class="flex flex-col">
+          <span class="text-sm font-medium">Remember on this device</span>
+          <span class="text-xs text-muted-foreground">
+            {remember
+              ? 'Saved in this browser (localStorage) so you don’t re-enter it.'
+              : 'Kept in memory only — cleared when you close this tab. Best on shared machines.'}
+          </span>
+        </label>
+        <Switch id="ai-remember" bind:checked={remember} />
       </div>
 
       <div class="flex items-center justify-between">

@@ -21,7 +21,9 @@
     },
     overviewRulerLanes: 0,
     glyphMargin: true,
-    lineNumbersMinChars: 4
+    lineNumbersMinChars: 4,
+    // Small breathing room so the first line doesn't abut the top edge.
+    padding: { top: 8 }
   } satisfies monaco.editor.IStandaloneEditorConstructionOptions;
   let currentText = '';
   let isUpdatingFromState = false;
@@ -47,6 +49,12 @@
     '',
     'mermaid',
     monaco.Uri.parse('internal://mermaid.mmd')
+  );
+  // Per-diagram "AI Context" tab — freeform prose, edited as Markdown.
+  const contextModel = monaco.editor.createModel(
+    '',
+    'markdown',
+    monaco.Uri.parse('internal://ai-context.md')
   );
 
   // The gutter glyph is the per-line "AI" trigger; clicking it opens the AI panel.
@@ -152,17 +160,22 @@
       resizeObserver.disconnect();
       jsonModel.dispose();
       mermaidModel.dispose();
+      contextModel.dispose();
       editor?.dispose();
     };
   });
 
   $effect(() => {
-    const { errorMarkers, editorMode, code, mermaid } = validatedState.current;
+    const { errorMarkers, editorMode, code, mermaid, aiContext } = validatedState.current;
     if (!editor) {
       return;
     }
 
-    const model = editorMode === 'code' ? mermaidModel : jsonModel;
+    const model =
+      editorMode === 'code' ? mermaidModel : editorMode === 'config' ? jsonModel : contextModel;
+
+    // The AI Context tab is prose, so wrap it; code/config read better unwrapped.
+    editor.updateOptions({ wordWrap: editorMode === 'context' ? 'on' : 'off' });
 
     if (editor.getModel()?.id !== model.id) {
       editor.setModel(model);
@@ -175,7 +188,8 @@
     }
 
     // Update editor text if it's different
-    const newText = editorMode === 'code' ? code : mermaid;
+    const newText =
+      editorMode === 'code' ? code : editorMode === 'config' ? mermaid : (aiContext ?? '');
     if (newText !== currentText) {
       isUpdatingFromState = true;
       try {

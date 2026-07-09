@@ -33,8 +33,7 @@
     },
     { title: 'Hand-drawn', config: { theme: 'default', look: 'handDrawn' } },
     { title: 'ELK layout', config: { theme: 'default', layout: 'elk' } },
-    { title: 'Large text', config: { theme: 'default', themeVariables: { fontSize: '20px' } } },
-    { title: 'Loose security', config: { theme: 'default', securityLevel: 'loose' } }
+    { title: 'Large text', config: { theme: 'default', themeVariables: { fontSize: '20px' } } }
   ];
 
   const applyConfig = (preset: ConfigPreset): void => {

@@ -3,9 +3,10 @@
  * directly from the browser with the user's API key. Given the current diagram
  * and an instruction, returns updated Mermaid code plus a short summary.
  *
- * Model: gemini-2.5-flash-lite — the most cost-effective Gemini model
- * ($0.10 / $0.40 per 1M input/output tokens as of 2026), which is plenty for
- * generating Mermaid. Change MODEL below to trade cost for capability.
+ * Model: gemini-3.1-flash-lite — the cost-effective "lite" tier, which is
+ * plenty for generating Mermaid. Change MODEL below to trade cost for
+ * capability. If Google's API rejects this exact id (model names sometimes
+ * carry a dated or "-preview" suffix), only this one string needs updating.
  *
  * The system prompt is composed by the editable "skill" (`src/lib/ai/skill.ts`)
  * from the diagram type and the user's standing preferences — this module just
@@ -14,7 +15,7 @@
 
 import { buildSystemPrompt } from '$/ai/skill';
 
-export const MODEL = 'gemini-2.5-flash-lite';
+export const MODEL = 'gemini-3.1-flash-lite';
 
 interface GeminiPart {
   text?: string;
@@ -48,7 +49,7 @@ export const generateMermaid = async ({
   code,
   apiKey,
   diagramType,
-  userStyle,
+  context,
   history
 }: {
   prompt: string;
@@ -56,8 +57,8 @@ export const generateMermaid = async ({
   apiKey: string;
   /** Detected type of the current diagram, for type-specific skill guidance. */
   diagramType?: string;
-  /** The user's persisted custom instructions (`aiSettings.style`). */
-  userStyle?: string;
+  /** The user's per-diagram "AI Context" tab content (`State.aiContext`). */
+  context?: string;
   /**
    * Recent edits (oldest-first) replayed as prior conversation turns so the
    * model can resolve references like "undo that" / "make it bigger". Omit for
@@ -66,9 +67,10 @@ export const generateMermaid = async ({
    */
   history?: { prompt: string; summary: string }[];
 }): Promise<AiResult> => {
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(
-    apiKey
-  )}`;
+  // Pass the key via the x-goog-api-key header, NOT a ?key= query param: query
+  // strings get captured in proxy/CDN access logs, browser history, and the
+  // Referer header, whereas a request header does not.
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
   // Replay prior edits as compact turns (instruction ↔ what changed), then the
   // live turn with the full current source as ground truth.
@@ -78,7 +80,7 @@ export const generateMermaid = async ({
   ]);
 
   const body = {
-    systemInstruction: { parts: [{ text: buildSystemPrompt({ diagramType, userStyle }) }] },
+    systemInstruction: { parts: [{ text: buildSystemPrompt({ diagramType, context }) }] },
     contents: [
       ...priorTurns,
       {
@@ -101,7 +103,7 @@ export const generateMermaid = async ({
 
   const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify(body)
   });
 

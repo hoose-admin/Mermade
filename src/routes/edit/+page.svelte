@@ -3,6 +3,7 @@
   import AiKeyDialog from '$/components/AiKeyDialog.svelte';
   import AiPanel from '$/components/AiPanel.svelte';
   import Card from '$/components/Card/Card.svelte';
+  import ColorThemes from '$/components/ColorThemes.svelte';
   import ConfigPresets from '$/components/ConfigPresets.svelte';
   import Editor from '$/components/Editor.svelte';
   import FileToolbar from '$/components/FileToolbar.svelte';
@@ -28,7 +29,7 @@
   import { saveActive, saveActiveAs } from '$/util/fileAccess.svelte';
   import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
-  import { validatedState, updateCodeStore } from '$/util/state.svelte';
+  import { validatedState, updateCodeStore, migrateLegacyAiContext } from '$/util/state.svelte';
   import { logEvent } from '$/util/stats';
   import { initHandler } from '$/util/util';
   import { onMount } from 'svelte';
@@ -38,12 +39,12 @@
   import ChevronRightIcon from '~icons/material-symbols/chevron-right-rounded';
   import HistoryIcon from '~icons/material-symbols/history';
   import GearIcon from '~icons/material-symbols/settings-outline-rounded';
+  import ContextIcon from '~icons/material-symbols/description-outline-rounded';
 
   const panZoomState = new PanZoomState();
 
   const tabSelectHandler = (tab: Tab) => {
-    const editorMode: EditorMode = tab.id === 'code' ? 'code' : 'config';
-    updateCodeStore({ editorMode });
+    updateCodeStore({ editorMode: tab.id as EditorMode });
   };
 
   const editorTabs: Tab[] = [
@@ -56,6 +57,11 @@
       icon: GearIcon,
       id: 'config',
       title: 'Config'
+    },
+    {
+      icon: ContextIcon,
+      id: 'context',
+      title: 'AI Context'
     }
   ];
 
@@ -67,6 +73,8 @@
   onMount(async () => {
     showEditorChooser = shouldShowEditorChooser();
     await initHandler();
+    // Tabs exist now; seed the active diagram from any legacy global instructions.
+    migrateLegacyAiContext();
     window.addEventListener('appinstalled', () => {
       logEvent('pwaInstalled', { isMobile });
     });
@@ -116,6 +124,7 @@
     <Separator orientation="vertical" class="mx-1 h-6" />
     <Preset />
     <ConfigPresets />
+    <ColorThemes />
     <Actions />
     <div class="flex-1"></div>
     <IconTip

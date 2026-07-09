@@ -9,6 +9,7 @@
   } from '$/ai/aiHistory.svelte';
   import { aiKeyDialog, aiPanel, aiSettings } from '$/util/aiSettings.svelte';
   import { generateMermaid, MODEL } from '$/util/gemini';
+  import { parse } from '$/util/mermaid';
   import { persisted } from '$/util/persist.svelte';
   import { updateCode, validatedState } from '$/util/state.svelte';
   import AutoAwesomeIcon from '~icons/material-symbols/auto-awesome-outline-rounded';
@@ -22,10 +23,14 @@
   // half-typed prompt. Cleared on a successful send.
   const draft = persisted<string>('aiDraft', '');
   let loading = $state(false);
+  let status = $state('Generating…');
   let error = $state('');
   let summary = $state('');
   let showHistory = $state(false);
   let textarea = $state<HTMLTextAreaElement>();
+
+  // Extra round-trips allowed to fix a diagram that fails to render.
+  const MAX_REPAIRS = 2;
 
   // Focus the input whenever the panel opens.
   $effect(() => {
@@ -33,6 +38,16 @@
       textarea?.focus();
     }
   });
+
+  // Returns the parse error message if `code` is invalid Mermaid, else null.
+  const parseError = async (code: string): Promise<string | null> => {
+    try {
+      await parse(code);
+      return null;
+    } catch (e) {
+      return e instanceof Error ? e.message : String(e);
+    }
+  };
 
   const submit = async () => {
     if (loading) {
@@ -47,10 +62,12 @@
       return;
     }
     loading = true;
+    status = 'Generating…';
     error = '';
     // The code we send is exactly the "before" state for the checkpoint.
     const beforeCode = validatedState.current.code;
     const diagramType = validatedState.current.diagramType;
+    const context = validatedState.current.aiContext;
     // Recent edits leading to the current state (before this one is recorded).
     const history = aiSettings.conversational ? contextTurns() : undefined;
     try {
@@ -59,19 +76,50 @@
         code: beforeCode,
         apiKey: aiSettings.key,
         diagramType,
-        userStyle: aiSettings.style,
+        context,
         history
       });
-      updateCode(result.code, { updateDiagram: true });
+
+      // Validate the model's output and, if it won't render, hand the parse
+      // error back to the model to fix — up to MAX_REPAIRS times.
+      let code = result.code;
+      let err = await parseError(code);
+      let repairs = 0;
+      while (err && repairs < MAX_REPAIRS) {
+        repairs += 1;
+        status = `Fixing a syntax error… (attempt ${repairs})`;
+        const fix = await generateMermaid({
+          prompt: `The Mermaid source above fails to render with this error:\n\n${err}\n\nReturn the corrected, complete Mermaid source. Change only what is needed to make it valid and keep the intended structure. Remember to wrap any label containing parentheses, commas or other special characters in double quotes.`,
+          code, // the broken code becomes the "current diagram" to fix
+          apiKey: aiSettings.key,
+          diagramType,
+          context
+        });
+        code = fix.code;
+        err = await parseError(code);
+      }
+
+      if (err) {
+        // Still broken after retries — leave the current diagram untouched
+        // rather than replacing it with something that won't render.
+        error = `Couldn't produce a valid diagram after ${repairs} repair ${
+          repairs === 1 ? 'attempt' : 'attempts'
+        }. Last error: ${err}`;
+        return;
+      }
+
+      const note = repairs > 0 ? ' (auto-fixed a syntax error)' : '';
+      const finalSummary = `${result.summary || 'Diagram updated.'}${note}`;
+      updateCode(code, { updateDiagram: true });
       recordCheckpoint({
         prompt,
-        summary: result.summary,
+        summary: finalSummary,
         model: MODEL,
         beforeCode,
-        afterCode: result.code,
+        afterCode: code,
         diagramType
       });
-      summary = result.summary || 'Diagram updated.';
+      summary = finalSummary;
       draft.value = '';
     } catch (requestError) {
       error = requestError instanceof Error ? requestError.message : 'Request failed';
@@ -162,7 +210,7 @@
     </div>
 
     {#if loading}
-      <span class="px-1 text-xs text-muted-foreground">Generating…</span>
+      <span class="px-1 text-xs text-muted-foreground">{status}</span>
     {:else if error}
       <span class="px-1 text-xs text-destructive">{error}</span>
     {:else if summary}

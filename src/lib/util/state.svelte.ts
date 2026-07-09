@@ -348,6 +348,26 @@ export const updateConfig = (config: string): void => {
   updateCodeStore({ mermaid: config });
 };
 
+export const updateContext = (context: string): void => {
+  updateCodeStore({ aiContext: context });
+};
+
+// One-time migration: the AI's user-editable context used to be a single global
+// "Custom instructions" value (localStorage `aiUserStyle`). It is now per-diagram
+// (`State.aiContext`, the "AI Context" tab). Seed the active diagram from the old
+// value once, so nothing the user wrote is lost. Guarded by a persisted flag.
+export const migrateLegacyAiContext = (): void => {
+  const done = readJSON<boolean>('aiContextMigrated', false);
+  if (done) {
+    return;
+  }
+  const legacy = readJSON<string>('aiUserStyle', '');
+  if (legacy.trim() && !validatedCurrent.aiContext) {
+    updateContext(legacy);
+  }
+  writeJSON('aiContextMigrated', true);
+};
+
 export const toggleDarkTheme = (dark: boolean): void => {
   update((state) => {
     const config = JSON.parse(state.mermaid) as MermaidConfig;

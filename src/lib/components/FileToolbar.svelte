@@ -8,6 +8,7 @@
   import MermaidTailIcon from '~icons/custom/mermaid-tail';
   import AddIcon from '~icons/material-symbols/add-2-rounded';
   import BookIcon from '~icons/material-symbols/book-2-outline-rounded';
+  import SyntaxIcon from '~icons/material-symbols/menu-book-outline-rounded';
   import DuplicateIcon from '~icons/material-symbols/content-copy-outline-rounded';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-outline-rounded';
   import SaveIcon from '~icons/material-symbols/save-outline-rounded';
@@ -22,5 +23,10 @@
   <IconTip label="Save as…" icon={SaveAsIcon} onclick={() => void saveActiveAs()} />
   <Separator orientation="vertical" class="mx-1 h-6" />
   <IconTip label="Documentation" icon={BookIcon} href="{env.docsUrl}/intro/" target="_blank" />
+  <IconTip
+    label="Diagram syntax reference"
+    icon={SyntaxIcon}
+    href="https://mermaid.ai/open-source/intro/syntax-reference.html"
+    target="_blank" />
   <IconTip label="Mermaid.js" icon={MermaidTailIcon} href={env.docsUrl} target="_blank" />
 </div>

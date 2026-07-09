@@ -2,16 +2,19 @@
   import DesktopEditor from '$/components/DesktopEditor.svelte';
   import MobileEditor from '$/components/MobileEditor.svelte';
   import { TID } from '$/constants';
-  import { updateCode, updateConfig, validatedState } from '$lib/util/state.svelte';
+  import { updateCode, updateConfig, updateContext, validatedState } from '$lib/util/state.svelte';
   import { debounce } from 'lodash-es';
   import ExclamationCircleIcon from '~icons/material-symbols/error-outline-rounded';
 
   const { isMobile } = $props<{ isMobile: boolean }>();
   const onUpdate = (text: string) => {
-    if (validatedState.current.editorMode === 'code') {
+    const editorMode = validatedState.current.editorMode;
+    if (editorMode === 'code') {
       updateCode(text);
-    } else {
+    } else if (editorMode === 'config') {
       updateConfig(text);
+    } else {
+      updateContext(text);
     }
   };
 
