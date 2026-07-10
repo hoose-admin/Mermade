@@ -14,6 +14,7 @@
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
   import Preset from '$/components/Preset.svelte';
   import Share from '$/components/Share.svelte';
+  import Support from '$/components/Support.svelte';
   import TabBar from '$/components/TabBar.svelte';
   import ThemeToggle from '$/components/ThemeToggle.svelte';
   import Tip from '$/components/Tip.svelte';
@@ -122,6 +123,7 @@
     <ConfigPresets />
     <ColorThemes />
     <Actions />
+    <Support />
     <div class="flex-1"></div>
     <IconTip
       label="AI assistant"
