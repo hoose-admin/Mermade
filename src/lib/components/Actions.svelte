@@ -11,15 +11,12 @@
   import { waitForRender } from '$lib/util/autoSync';
   import { inputState, updateCodeStore, validatedState } from '$lib/util/state.svelte';
   import { logEvent } from '$lib/util/stats';
-  import { version as FAVersion } from '@fortawesome/fontawesome-free/package.json';
   import dayjs from 'dayjs';
   import { toBase64 } from 'js-base64';
   import ChevronDownIcon from '~icons/material-symbols/keyboard-arrow-down-rounded';
   import DownloadIcon from '~icons/material-symbols/download';
   import ExternalLinkIcon from '~icons/material-symbols/open-in-new-rounded';
   import WidthIcon from '~icons/material-symbols/width-rounded';
-
-  const FONT_AWESOME_URL = `https://cdnjs.cloudflare.com/ajax/libs/font-awesome/${FAVersion}/css/all.min.css`;
 
   type Exporter = (context: CanvasRenderingContext2D, image: HTMLImageElement) => () => void;
 
@@ -92,7 +89,6 @@
       .replaceAll(/<img([^>]*)>/g, (m, g: string) => `<img ${g} />`);
 
     return toBase64(`<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet href="${FONT_AWESOME_URL}" type="text/css"?>
 ${svgString}`);
   };
 
