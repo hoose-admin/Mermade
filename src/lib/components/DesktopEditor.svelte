@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { EditorProps } from '$/types';
   import { aiPanel } from '$/util/aiSettings.svelte';
-  import { env } from '$/util/env';
   import { validatedState } from '$/util/state.svelte';
   import { initEditor } from '$lib/util/monacoExtra';
   import { errorDebug } from '$lib/util/util';
@@ -94,15 +93,12 @@
       throw new Error('divEl is undefined');
     }
 
+    // Validate config JSON syntax locally only. No remote schema is fetched:
+    // this app makes no external network requests (standalone / offline-capable).
     monaco.json.jsonDefaults.setDiagnosticsOptions({
       validate: true,
-      enableSchemaRequest: true,
-      schemas: [
-        {
-          fileMatch: ['config.json'],
-          uri: `${env.docsUrl}/schemas/config.schema.json`
-        }
-      ]
+      enableSchemaRequest: false,
+      schemas: []
     });
 
     initEditor(monaco);

@@ -17,6 +17,10 @@ RUN pnpm build
 
 # --- Serve ---
 FROM nginx:1.28-alpine3.21 AS runtime
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# nginx.conf.template is rendered by the image entrypoint (envsubst) at start,
+# substituting ${PORT}. Default to 8080 so `docker run` works locally; Cloud Run
+# overrides PORT via the environment.
+ENV PORT=8080
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=builder /app/docs /usr/share/nginx/html
 EXPOSE 8080

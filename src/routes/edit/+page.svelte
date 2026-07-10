@@ -10,7 +10,6 @@
   import History from '$/components/History/History.svelte';
   import { startAutoSave } from '$/components/History/historyState.svelte';
   import IconTip from '$/components/IconTip.svelte';
-  import EditorChooserModal from '$/components/migration/EditorChooserModal.svelte';
   import Navbar from '$/components/Navbar.svelte';
   import PanZoomToolbar from '$/components/PanZoomToolbar.svelte';
   import Preset from '$/components/Preset.svelte';
@@ -27,7 +26,6 @@
   import type { EditorMode, Tab } from '$/types';
   import { aiPanel } from '$/util/aiSettings.svelte';
   import { saveActive, saveActiveAs } from '$/util/fileAccess.svelte';
-  import { shouldShowEditorChooser } from '$/util/migration/domainMigration';
   import { PanZoomState } from '$/util/panZoom';
   import { validatedState, updateCodeStore, migrateLegacyAiContext } from '$/util/state.svelte';
   import { logEvent } from '$/util/stats';
@@ -68,10 +66,8 @@
   let width = $state(0);
   let isMobile = $derived(width < 640);
   let isViewMode = $state(true);
-  let showEditorChooser = $state(false);
 
   onMount(async () => {
-    showEditorChooser = shouldShowEditorChooser();
     await initHandler();
     // Tabs exist now; seed the active diagram from any legacy global instructions.
     migrateLegacyAiContext();
@@ -211,5 +207,4 @@
   </div>
 </div>
 
-<EditorChooserModal bind:open={showEditorChooser} />
 <AiKeyDialog />

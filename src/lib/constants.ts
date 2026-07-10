@@ -8,9 +8,3 @@ export const TID = {
   errorContainer: 'error-container',
   themeToggleButton: 'theme-toggle-button'
 } as const;
-
-export const C = {
-  aiLiveEditor: 'ai_live_editor',
-  editorChooserDismissedKey: 'mermaid-editor-chooser-dismissed',
-  utmSource: 'mermaid_live_editor'
-} as const;

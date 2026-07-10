@@ -1,0 +1,47 @@
+# nginx config for Cloud Run.
+#
+# This file is a TEMPLATE: the official nginx image entrypoint runs envsubst
+# over /etc/nginx/templates/*.template at container start. Only real environment
+# variables are substituted, so ${PORT} (injected by Cloud Run, default 8080)
+# is replaced while nginx runtime variables like $uri / $cache_control are left
+# untouched. See the Dockerfile for where this is copied.
+
+# Per-URL cache policy. Kept in the http context (conf.d is included inside
+# http{}) so a single `location` can carry every security header — repeating
+# add_header in a second location would silently drop the server-level headers
+# (nginx only inherits add_header when the child level defines none).
+map $uri $cache_control {
+  default            "no-cache";                              # HTML/manifest: always revalidate
+  ~^/_app/immutable/ "public, max-age=31536000, immutable";  # fingerprinted build assets
+}
+
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+
+  # Security headers that a <meta>-delivered CSP can't express. `always` so they
+  # are sent on error responses too. The CSP itself is emitted by SvelteKit into
+  # each page (see kit.csp in svelte.config.js).
+  add_header X-Frame-Options "DENY" always;                    # clickjacking
+  add_header X-Content-Type-Options "nosniff" always;          # MIME sniffing
+  add_header Referrer-Policy "no-referrer" always;             # don't leak URLs
+  add_header Permissions-Policy "geolocation=(), camera=(), microphone=()" always;
+  # Cloud Run always terminates TLS / serves HTTPS — pin browsers to it.
+  add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+  add_header Cache-Control $cache_control always;
+
+  # Compress text responses (images/fonts are already compressed).
+  gzip on;
+  gzip_vary on;
+  gzip_comp_level 6;
+  gzip_min_length 1024;
+  # nginx serves .js as text/javascript (>=1.21.1), so list both spellings.
+  gzip_types text/plain text/css text/javascript application/javascript application/json
+             image/svg+xml application/manifest+json application/xml;
+
+  location / {
+    # SvelteKit static build: fall back to the SPA entry for client-side routes.
+    try_files $uri $uri/ /index.html;
+  }
+}

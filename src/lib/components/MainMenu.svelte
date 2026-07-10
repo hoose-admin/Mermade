@@ -1,14 +1,11 @@
 <script lang="ts">
   import * as Popover from '$/components/ui/popover';
-  import { env } from '$/util/env';
   import { openFile, saveActive, saveActiveAs } from '$/util/fileAccess.svelte';
   import { urls } from '$/util/state.svelte';
   import { cmdKey } from '$/util/util';
   import { cn } from '$/utils';
   import type { Component, Snippet } from 'svelte';
-  import MermaidTailIcon from '~icons/custom/mermaid-tail';
   import AddIcon from '~icons/material-symbols/add-2-rounded';
-  import BookIcon from '~icons/material-symbols/book-2-outline-rounded';
   import DuplicateIcon from '~icons/material-symbols/content-copy-outline-rounded';
   import FolderOpenIcon from '~icons/material-symbols/folder-open-outline-rounded';
   import MenuIcon from '~icons/material-symbols/menu-rounded';
@@ -44,19 +41,6 @@
       label: 'Duplicate',
       icon: DuplicateIcon,
       href: window.location.href,
-      isSectionEnd: true,
-      renderer: menuItem
-    },
-    {
-      label: 'Mermaid.js',
-      icon: MermaidTailIcon,
-      href: env.docsUrl,
-      renderer: menuItem
-    },
-    {
-      label: 'Documentation',
-      icon: BookIcon,
-      href: `${env.docsUrl}/intro/`,
       renderer: menuItem
     }
   ]);

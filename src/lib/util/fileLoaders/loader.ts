@@ -1,59 +1,32 @@
-import type { Loader, State } from '$lib/types';
+import type { State } from '$lib/types';
 import { defaultState, sanitizeConfig, updateCodeStore } from '$lib/util/state.svelte';
 import { fetchText } from '$lib/util/util';
-import { loadGistData } from './gist';
 
-const loaders: Record<string, Loader> = {
-  gist: loadGistData
-};
-
+// Loads a diagram from `?code=<url>&config=<url>` query params. The URLs are
+// fetched client-side, so the strict Content-Security-Policy (connect-src) only
+// permits same-origin resources — there is no cross-origin/3rd-party fetching.
 export const loadDataFromUrl = async (): Promise<void> => {
   const searchParams = new URLSearchParams(window.location.search);
-  let state: Partial<State> = defaultState;
-  let loaded = false;
   const codeURL: string | undefined = searchParams.get('code') ?? undefined;
   const configURL: string | undefined = searchParams.get('config') ?? undefined;
 
-  let code: string | undefined;
+  if (!codeURL) {
+    return;
+  }
+
+  const code = await fetchText(codeURL);
   const config = configURL ? await fetchText(configURL) : defaultState.mermaid;
 
-  if (codeURL) {
-    code = await fetchText(codeURL);
-    loaded = true;
-  }
-  if (code) {
-    if (!codeURL) {
-      throw new Error('Code URL is not defined');
-    }
-    state = {
-      code,
-      loader: {
-        config: {
-          codeURL,
-          configURL
-        },
-        type: 'files'
-      },
-      mermaid: config
-    };
-  } else {
-    for (const [key, value] of searchParams.entries()) {
-      if (key in loaders) {
-        try {
-          state = await loaders[key](value);
-          loaded = true;
-          break;
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    }
-  }
-  if (loaded) {
-    state.mermaid = sanitizeConfig(state.mermaid || defaultState.mermaid);
-    updateCodeStore({
-      ...state,
-      updateDiagram: true
-    });
-  }
+  const state: Partial<State> = {
+    code,
+    loader: {
+      config: { codeURL, configURL },
+      type: 'files'
+    },
+    mermaid: sanitizeConfig(config || defaultState.mermaid)
+  };
+  updateCodeStore({
+    ...state,
+    updateDiagram: true
+  });
 };
