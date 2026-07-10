@@ -30,6 +30,8 @@ Run `make` on its own to list every target:
 | `make test` | Unit (Vitest) + e2e (Playwright) |
 | `make clean` | Remove build output and caches |
 | `make docker-run` | Build + run the container at http://localhost:8080 |
+| `make deploy` | Deploy to GCP Cloud Run (scale-to-zero) |
+| `make deploy-url` / `make logs` | Print the service URL / tail logs |
 
 Prefer raw pnpm? The underlying scripts (`pnpm dev`, `pnpm build`, …) still work
 if you have the right Node (≥ 24.16.0; the repo is `engine-strict`).
@@ -40,20 +42,38 @@ anywhere with no server runtime.
 ## Deploy to GCP (Cloud Run)
 
 The included `Dockerfile` builds the static site and serves it with nginx on port
-8080 (Cloud Run's default). To deploy:
+8080 (Cloud Run's default). Deploys use Cloud Build from source — no local Docker
+or image registry wrangling needed.
+
+One-time (defaults target project `mermade` in `us-central1`):
 
 ```sh
-gcloud run deploy agentic-diagram \
-  --source . \
-  --region <your-region> \
-  --allow-unauthenticated
+gcloud auth login
+make gcp-enable-apis     # enables Cloud Run, Cloud Build, Artifact Registry
 ```
 
-To build/run the container locally:
+Then deploy (and grab the URL):
 
 ```sh
-docker build -t agentic-diagram .
-docker run --rm -p 8080:8080 agentic-diagram   # http://localhost:8080
+make deploy              # builds + rolls out; scale-to-zero, minimal resources
+make deploy-url          # print the public https URL
+make logs                # tail recent logs
+```
+
+`make deploy` is tuned to cost ~nothing when idle: it scales to **zero**
+instances (`--min-instances 0`), caps at a **single** instance
+(`--max-instances 1`), and uses a small request-billed instance (1 vCPU / 256Mi,
+CPU only allocated while serving a request). Any of it can be overridden inline,
+e.g. to bump memory or use a different service name:
+
+```sh
+make deploy CR_MEMORY=512Mi SERVICE=my-diagrams
+```
+
+To build/run the container locally instead:
+
+```sh
+make docker-run          # http://localhost:8080
 ```
 
 ## License

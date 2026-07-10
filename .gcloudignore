@@ -1,0 +1,31 @@
+# What NOT to upload to Cloud Build when running `gcloud run deploy --source .`.
+#
+# gcloud tars the working dir and ships it to Cloud Build; the image is then
+# built fresh from the Dockerfile (which reinstalls deps and rebuilds the site).
+# So exclude anything large, regenerable, or secret. When this file exists gcloud
+# uses ONLY it (it stops honoring .gitignore), so keep it self-contained.
+
+.git
+.gitignore
+
+# Deps + build output — rebuilt inside the container.
+node_modules
+.svelte-kit
+docs
+build
+
+# Secrets — never ship these to the builder. (BYOK: the app needs no key to build.)
+.env
+.env.*
+!.env.example
+
+# Local-only cruft the image doesn't need.
+tests
+coverage
+test-results
+playwright-report
+blob-report
+playwright/.cache
+.vscode
+*.log
+.DS_Store
