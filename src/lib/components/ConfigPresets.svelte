@@ -22,29 +22,6 @@
   // as Mermaid config; shape/edge tricks that need diagram *code* live in the examples instead.
   const groups: ConfigGroup[] = [
     {
-      label: 'Themes',
-      presets: [
-        { title: 'Default', config: { theme: 'default' } },
-        { title: 'Dark', config: { theme: 'dark' } },
-        { title: 'Forest', config: { theme: 'forest' } },
-        { title: 'Neutral', config: { theme: 'neutral' } },
-        { title: 'Redux', config: { theme: 'redux-color' } },
-        {
-          title: 'Weave',
-          config: {
-            theme: 'base',
-            themeVariables: {
-              primaryColor: '#dbe4ff',
-              primaryBorderColor: '#1e66f5',
-              primaryTextColor: '#15130f',
-              lineColor: '#5d574d',
-              fontFamily: 'Fira Code, monospace'
-            }
-          }
-        }
-      ]
-    },
-    {
       label: 'Look',
       presets: [
         { title: 'Hand-drawn', config: { theme: 'default', look: 'handDrawn', handDrawnSeed: 1 } },

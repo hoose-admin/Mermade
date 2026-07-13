@@ -74,10 +74,23 @@ docker-run: docker-build ## Build + run the container at http://localhost:8080
 gcp-check:
 	@command -v gcloud >/dev/null || { echo "gcloud CLI not found — https://cloud.google.com/sdk/docs/install"; exit 1; }
 	@test -n "$(GCP_PROJECT)" || { echo "No GCP project set. Pass GCP_PROJECT=<id> or run: gcloud config set project <id>"; exit 1; }
+	@acct=$$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null); \
+		test -n "$$acct" || { echo "Not authenticated with gcloud. Run: gcloud auth login"; exit 1; }; \
+		echo "gcloud account : $$acct"
+	@echo "target project : $(GCP_PROJECT)"
+	@echo "target region  : $(GCP_REGION)"
+	@gcloud projects describe $(GCP_PROJECT) --format='value(projectId)' >/dev/null 2>&1 \
+		|| { echo "==> Active credentials can't access project '$(GCP_PROJECT)'. Wrong login, or no access — run 'gcloud auth login' / check the project id."; exit 1; }
+	@echo "==> Credentials verified for '$(GCP_PROJECT)'."
 
-gcp-enable-apis: gcp-check ## One-time: enable the APIs Cloud Run source deploys need
+gcp-enable-apis: gcp-check ## One-time: enable the APIs + registry Cloud Run source deploys need
 	gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
 		--project $(GCP_PROJECT)
+	@echo "==> Ensuring the 'cloud-run-source-deploy' Artifact Registry repo exists..."
+	@gcloud artifacts repositories describe cloud-run-source-deploy \
+		--location $(GCP_REGION) --project $(GCP_PROJECT) >/dev/null 2>&1 \
+		|| gcloud artifacts repositories create cloud-run-source-deploy \
+			--repository-format=docker --location $(GCP_REGION) --project $(GCP_PROJECT)
 
 deploy: gcp-check ## Deploy to Cloud Run (scale-to-zero, minimal resources)
 	gcloud run deploy $(SERVICE) \

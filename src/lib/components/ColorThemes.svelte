@@ -25,6 +25,38 @@
     palette: Palette;
   }
 
+  // Built-in Mermaid themes, moved here from the Configs menu. Unlike the palettes
+  // below (which merge into the current Config), each of these is a self-contained
+  // Config that REPLACES the current one — built-in themes derive all of their colors,
+  // so merging stale `themeVariables` from a previous palette would corrupt them.
+  interface ConfigTheme {
+    title: string;
+    swatch: string; // representative node fill, shown as the button dot
+    config: Record<string, unknown>;
+  }
+
+  const configThemes: ConfigTheme[] = [
+    { title: 'Default', swatch: '#ececff', config: { theme: 'default' } },
+    { title: 'Dark', swatch: '#333333', config: { theme: 'dark' } },
+    { title: 'Forest', swatch: '#cde498', config: { theme: 'forest' } },
+    { title: 'Neutral', swatch: '#eeeeee', config: { theme: 'neutral' } },
+    { title: 'Redux', swatch: '#3b6ea5', config: { theme: 'redux-color' } },
+    {
+      title: 'Weave',
+      swatch: '#dbe4ff',
+      config: {
+        theme: 'base',
+        themeVariables: {
+          primaryColor: '#dbe4ff',
+          primaryBorderColor: '#1e66f5',
+          primaryTextColor: '#15130f',
+          lineColor: '#5d574d',
+          fontFamily: 'Fira Code, monospace'
+        }
+      }
+    }
+  ];
+
   // These affect ONLY the diagram's own colors (nodes, edges, text) via mermaid's
   // `base` theme + `themeVariables` — not the app chrome.
   const themes: ColorTheme[] = [
@@ -161,6 +193,11 @@
     config.themeVariables = { ...existingVars, ...themeVariablesFor(theme.palette) };
     updateConfig(formatJSON(config));
   };
+
+  // Built-in themes are self-contained, so they replace the whole Config.
+  const applyConfigTheme = (theme: ConfigTheme): void => {
+    updateConfig(formatJSON(theme.config));
+  };
 </script>
 
 <Popover.Root>
@@ -170,18 +207,36 @@
     Colors
     <ChevronDownIcon class="size-4 opacity-60" />
   </Popover.Trigger>
-  <Popover.Content align="start" class="w-64 p-1.5">
-    <div class="flex flex-wrap gap-1.5">
-      {#each themes as theme (theme.title)}
-        <Popover.Close
-          class={cn(buttonVariants({ size: 'sm' }), 'min-w-20 flex-grow gap-1.5 normal-case')}
-          onclick={() => applyTheme(theme)}>
-          <span
-            class="size-3 shrink-0 rounded-full border border-black/20"
-            style="background-color: {theme.palette.surface}"></span>
-          {theme.title}
-        </Popover.Close>
-      {/each}
+  <Popover.Content align="start" class="max-h-[70vh] w-64 overflow-y-auto p-2">
+    <div class="mb-2">
+      <div class="px-1 pb-1 text-xs font-medium text-muted-foreground">Themes</div>
+      <div class="flex flex-wrap gap-1.5">
+        {#each configThemes as theme (theme.title)}
+          <Popover.Close
+            class={cn(buttonVariants({ size: 'sm' }), 'min-w-20 flex-grow gap-1.5 normal-case')}
+            onclick={() => applyConfigTheme(theme)}>
+            <span
+              class="size-3 shrink-0 rounded-full border border-black/20"
+              style="background-color: {theme.swatch}"></span>
+            {theme.title}
+          </Popover.Close>
+        {/each}
+      </div>
+    </div>
+    <div>
+      <div class="px-1 pb-1 text-xs font-medium text-muted-foreground">Palettes</div>
+      <div class="flex flex-wrap gap-1.5">
+        {#each themes as theme (theme.title)}
+          <Popover.Close
+            class={cn(buttonVariants({ size: 'sm' }), 'min-w-20 flex-grow gap-1.5 normal-case')}
+            onclick={() => applyTheme(theme)}>
+            <span
+              class="size-3 shrink-0 rounded-full border border-black/20"
+              style="background-color: {theme.palette.surface}"></span>
+            {theme.title}
+          </Popover.Close>
+        {/each}
+      </div>
     </div>
   </Popover.Content>
 </Popover.Root>

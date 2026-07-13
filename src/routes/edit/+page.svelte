@@ -16,6 +16,7 @@
   import Share from '$/components/Share.svelte';
   import Support from '$/components/Support.svelte';
   import TabBar from '$/components/TabBar.svelte';
+  import TextSize from '$/components/TextSize.svelte';
   import ThemeToggle from '$/components/ThemeToggle.svelte';
   import Tip from '$/components/Tip.svelte';
   import SyncRoughToolbar from '$/components/SyncRoughToolbar.svelte';
@@ -122,6 +123,7 @@
     <Preset />
     <ConfigPresets />
     <ColorThemes />
+    <TextSize />
     <Actions />
     <Support />
     <div class="flex-1"></div>
